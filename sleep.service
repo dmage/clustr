@@ -1,6 +1,6 @@
 [Service]
 Start = """
-	/bin/sleep 10 2>&1 &
+	/bin/sleep 10 >/dev/null 2>&1 &
 	echo $! > /tmp/clustr-sleep.pid &&
 	cat /tmp/clustr-sleep.pid
 """

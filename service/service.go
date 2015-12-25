@@ -41,8 +41,18 @@ type Service struct {
 	exe    string
 }
 
+type Error struct {
+	Name string
+	Err  error
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Name, e.Err)
+}
+
 func NewService(name string, config *Config) *Service {
 	return &Service{
+		Name:   name,
 		config: config,
 	}
 }
@@ -55,6 +65,8 @@ func (s *Service) initPID(pid int) error {
 		return err
 	}
 	s.exe = exe
+
+	log.Printf("%s: started with pid %d: %s", s.Name, s.pid, s.exe)
 
 	return nil
 }
@@ -88,19 +100,28 @@ func (s *Service) Start() error {
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("stderr pipe: %s", err)
+		return &Error{
+			Name: s.Name,
+			Err:  fmt.Errorf("stderr pipe: %s", err),
+		}
 	}
-	go LogReader(strconv.Quote(s.config.Stop)+": stderr: ", stderr)
+	go LogReader(s.Name+": stderr: ", stderr)
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("%s: %s", s.Name, err)
+		return &Error{
+			Name: s.Name,
+			Err:  err,
+		}
 	}
 
 	output := stdout.String()
 	pid, err := strconv.Atoi(strings.TrimSpace(output))
 	if err != nil {
-		return fmt.Errorf("%s: invalid pid from start command: %s", s.Name, strconv.Quote(output))
+		return &Error{
+			Name: s.Name,
+			Err:  fmt.Errorf("invalid pid from start command: %s", strconv.Quote(output)),
+		}
 	}
 
 	return s.initPID(pid)
@@ -111,19 +132,28 @@ func (s *Service) Stop() error {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("stdout pipe: %s", err)
+		return &Error{
+			Name: s.Name,
+			Err:  fmt.Errorf("stdout pipe: %s", err),
+		}
 	}
 	go LogReader(s.Name+": stdout: ", stdout)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("stderr pipe: %s", err)
+		return &Error{
+			Name: s.Name,
+			Err:  fmt.Errorf("stderr pipe: %s", err),
+		}
 	}
 	go LogReader(s.Name+": stderr: ", stderr)
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("%s: %s", s.Name, err)
+		return &Error{
+			Name: s.Name,
+			Err:  err,
+		}
 	}
 
 	return nil
