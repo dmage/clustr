@@ -1,0 +1,19 @@
+[Service]
+# Ubuntu 12.04
+# Start = """
+# start-stop-daemon --start --background \
+#	--pidfile=/tmp/clustr-sleep.pid --make-pidfile \
+#	--startas /bin/sh -- -ec "
+#		exec >>/tmp/clustr-sleep.log 2>&1
+#		exec /bin/sleep 10
+#	" &&
+# cat /tmp/clustr-sleep.pid
+# """
+
+# Ubuntu 14.04
+Start = """start-stop-daemon --start --background --no-close \
+	--make-pidfile --pidfile=/tmp/clustr-sleep.pid \
+	--exec /bin/sleep 30 >>/tmp/clustr-sleep.log 2>&1 && \
+	cat /tmp/clustr-sleep.pid"""
+
+Stop = "start-stop-daemon --stop --pidfile=/tmp/clustr-sleep.pid --exec /bin/sleep"
