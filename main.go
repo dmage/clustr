@@ -38,7 +38,8 @@ func main() {
 		panic(err)
 	}
 
-	service := service.NewService(&serviceUnit.Service)
+	service := service.NewService("sleep.service", &serviceUnit.Service)
+	service.WaitDelay = 100 * time.Millisecond
 	err = service.Start()
 	if err != nil {
 		log.Fatal("failed to start service: ", err)
@@ -52,6 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to stop service: ", err)
 	}
+
 	err = service.Wait()
 	if err != nil {
 		log.Fatal("failed to wait service: ", err)

@@ -33,12 +33,15 @@ type Config struct {
 }
 
 type Service struct {
+	Name      string
+	WaitDelay time.Duration
+
 	config *Config
 	pid    int
 	exe    string
 }
 
-func NewService(config *Config) *Service {
+func NewService(name string, config *Config) *Service {
 	return &Service{
 		config: config,
 	}
@@ -91,13 +94,13 @@ func (s *Service) Start() error {
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("%s: %s", strconv.Quote(s.config.Start), err)
+		return fmt.Errorf("%s: %s", s.Name, err)
 	}
 
 	output := stdout.String()
 	pid, err := strconv.Atoi(strings.TrimSpace(output))
 	if err != nil {
-		return fmt.Errorf("invalid pid from %s: %s", strconv.Quote(s.config.Start), strconv.Quote(output))
+		return fmt.Errorf("%s: invalid pid from start command: %s", s.Name, strconv.Quote(output))
 	}
 
 	return s.initPID(pid)
@@ -110,17 +113,17 @@ func (s *Service) Stop() error {
 	if err != nil {
 		return fmt.Errorf("stdout pipe: %s", err)
 	}
-	go LogReader(strconv.Quote(s.config.Stop)+": stdout: ", stdout)
+	go LogReader(s.Name+": stdout: ", stdout)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return fmt.Errorf("stderr pipe: %s", err)
 	}
-	go LogReader(strconv.Quote(s.config.Stop)+": stderr: ", stderr)
+	go LogReader(s.Name+": stderr: ", stderr)
 
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("%s: %s", strconv.Quote(s.config.Stop), err)
+		return fmt.Errorf("%s: %s", s.Name, err)
 	}
 
 	return nil
@@ -135,6 +138,6 @@ func (s *Service) Wait() error {
 		if !alive {
 			return nil
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(s.WaitDelay)
 	}
 }
