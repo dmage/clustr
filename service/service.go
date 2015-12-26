@@ -52,8 +52,9 @@ func (e Error) Error() string {
 
 func NewService(name string, config *Config) *Service {
 	return &Service{
-		Name:   name,
-		config: config,
+		Name:      name,
+		WaitDelay: 100 * time.Millisecond,
+		config:    config,
 	}
 }
 

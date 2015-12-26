@@ -1,30 +1,14 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"time"
 
-	"github.com/dmage/clustr/service"
-
-	"github.com/BurntSushi/toml"
 	"github.com/samuel/go-zookeeper/zk"
+
+	"github.com/dmage/clustr/service"
+	"github.com/dmage/clustr/unit"
 )
-
-type ServiceUnit struct {
-	Service service.Config
-}
-
-func ServiceUnitFromFile(filename string) (*ServiceUnit, error) {
-	buf, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	c := &ServiceUnit{}
-	err = toml.Unmarshal(buf, c)
-	return c, err
-}
 
 func main() {
 	c, _, err := zk.Connect([]string{"clustr_zookeeper_1"}, time.Second)
@@ -33,7 +17,7 @@ func main() {
 	}
 	c = c
 
-	serviceUnit, err := ServiceUnitFromFile("./sleep.service")
+	serviceUnit, err := unit.ServiceUnitFromFile("./sleep.service")
 	if err != nil {
 		panic(err)
 	}
