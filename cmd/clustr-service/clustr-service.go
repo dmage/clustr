@@ -6,9 +6,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/dmage/clustr/logging"
-	"github.com/dmage/clustr/service"
-	"github.com/dmage/clustr/unit"
+	"github.com/dmage/clustr/watcher"
 )
 
 var (
@@ -21,54 +19,17 @@ var (
 func main() {
 	command := kingpin.Parse()
 
-	serviceName, serviceUnit, err := unit.ServiceUnitFromFile(*serviceUnitFile)
-	if err != nil {
-		log.Fatal("failed to load service: ", err)
-	}
-
-	s := service.NewService(&serviceUnit.Service)
-	s.Stdout = &logging.Writer{Prefix: serviceName + ": stdout: "}
-	s.Stderr = &logging.Writer{Prefix: serviceName + ": stderr: "}
-
-	err = service.LoadState(serviceName, s)
-	if err != nil {
-		log.Fatal(serviceName, ": failed to load state: ", err)
-	}
-
-	alive, err := s.IsRunning()
-	if err != nil {
-		log.Fatal(serviceName, ": failed to check service status: ", err)
-	}
-
+	p := watcher.PrisonerFromFile(*serviceUnitFile)
 	switch command {
 	case start.FullCommand():
-		if alive {
-			log.Fatal(serviceName, ": service already running (pid ", s.PID(), ")")
-		}
-
-		err = s.Start()
-		if err != nil {
-			log.Fatal(serviceName, ": failed to start service: ", err)
-		}
-		err = service.SaveState(serviceName, s)
-		if err != nil {
-			log.Fatal(serviceName, ": failed to save state: ", err)
-		}
-		log.Printf("%s: started with pid %d: %s", serviceName, s.PID(), s.Exe())
+		p.Start()
 	case stop.FullCommand():
-		if !alive {
-			log.Fatal(serviceName, ": service already stopped")
-		}
-
-		err = s.Stop()
-		if err != nil {
-			log.Fatal(serviceName, ": failed to stop service: ", err)
-		}
+		p.Stop()
 	case status.FullCommand():
-		if alive {
-			log.Print(serviceName, " is running")
+		if p.IsRunning() {
+			log.Print(p.Name, " is running")
 		} else {
-			log.Print(serviceName, " stopped")
+			log.Print(p.Name, " stopped")
 			os.Exit(1)
 		}
 	default:
