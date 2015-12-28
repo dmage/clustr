@@ -55,6 +55,11 @@ func (s *Service) initPID(pid int) error {
 	return nil
 }
 
+func (s *Service) InitPIDExe(pid int, exe string) {
+	s.pid = pid
+	s.exe = exe
+}
+
 func (s *Service) IsRunning() (bool, error) {
 	if s.pid == 0 || s.exe == "" {
 		return false, nil
