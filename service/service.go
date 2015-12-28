@@ -1,11 +1,9 @@
 package service
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -13,18 +11,13 @@ import (
 	"time"
 )
 
-func LogReader(prefix string, stream io.Reader) {
-	r := bufio.NewReader(stream)
-	for {
-		line, err := r.ReadString('\n')
-		if err != nil {
-			if line != "" {
-				log.Print(prefix, line)
-			}
-			break
-		}
-		log.Print(prefix, line[0:len(line)-1])
-	}
+type Flusher interface {
+	Flush() error
+}
+
+type WriteFlusher interface {
+	io.Writer
+	Flusher
 }
 
 type Config struct {
@@ -33,26 +26,18 @@ type Config struct {
 }
 
 type Service struct {
-	Name      string
 	WaitDelay time.Duration
+
+	Stdout WriteFlusher
+	Stderr WriteFlusher
 
 	config *Config
 	pid    int
 	exe    string
 }
 
-type Error struct {
-	Name string
-	Err  error
-}
-
-func (e Error) Error() string {
-	return fmt.Sprintf("%s: %s", e.Name, e.Err)
-}
-
-func NewService(name string, config *Config) *Service {
+func NewService(config *Config) *Service {
 	return &Service{
-		Name:      name,
 		WaitDelay: 100 * time.Millisecond,
 		config:    config,
 	}
@@ -66,8 +51,6 @@ func (s *Service) initPID(pid int) error {
 		return err
 	}
 	s.exe = exe
-
-	log.Printf("%s: started with pid %d: %s", s.Name, s.pid, s.exe)
 
 	return nil
 }
@@ -94,35 +77,27 @@ func (s *Service) IsRunning() (bool, error) {
 }
 
 func (s *Service) Start() error {
-	cmd := exec.Command("/bin/sh", "-c", s.config.Start)
-
 	var stdout bytes.Buffer
+
+	cmd := exec.Command("/bin/sh", "-c", s.config.Start)
 	cmd.Stdout = &stdout
-
-	stderr, err := cmd.StderrPipe()
+	cmd.Stderr = s.Stderr
+	err := cmd.Run()
 	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  fmt.Errorf("stderr pipe: %s", err),
-		}
+		return err
 	}
-	go LogReader(s.Name+": stderr: ", stderr)
 
-	err = cmd.Run()
-	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  err,
+	if s.Stderr != nil {
+		err = s.Stderr.Flush()
+		if err != nil {
+			return err
 		}
 	}
 
 	output := stdout.String()
 	pid, err := strconv.Atoi(strings.TrimSpace(output))
 	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  fmt.Errorf("invalid pid from start command: %s", strconv.Quote(output)),
-		}
+		return fmt.Errorf("invalid pid from start command: %s", strconv.Quote(output))
 	}
 
 	return s.initPID(pid)
@@ -130,30 +105,24 @@ func (s *Service) Start() error {
 
 func (s *Service) Stop() error {
 	cmd := exec.Command("/bin/sh", "-c", s.config.Stop)
-
-	stdout, err := cmd.StdoutPipe()
+	cmd.Stdout = s.Stdout
+	cmd.Stderr = s.Stderr
+	err := cmd.Run()
 	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  fmt.Errorf("stdout pipe: %s", err),
+		return err
+	}
+
+	if s.Stdout != nil {
+		err = s.Stdout.Flush()
+		if err != nil {
+			return err
 		}
 	}
-	go LogReader(s.Name+": stdout: ", stdout)
 
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  fmt.Errorf("stderr pipe: %s", err),
-		}
-	}
-	go LogReader(s.Name+": stderr: ", stderr)
-
-	err = cmd.Run()
-	if err != nil {
-		return &Error{
-			Name: s.Name,
-			Err:  err,
+	if s.Stderr != nil {
+		err = s.Stderr.Flush()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -171,4 +140,12 @@ func (s *Service) Wait() error {
 		}
 		time.Sleep(s.WaitDelay)
 	}
+}
+
+func (s *Service) PID() int {
+	return s.pid
+}
+
+func (s *Service) Exe() string {
+	return s.exe
 }

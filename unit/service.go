@@ -2,6 +2,7 @@ package unit
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 
@@ -12,13 +13,13 @@ type ServiceUnit struct {
 	Service service.Config
 }
 
-func ServiceUnitFromFile(filename string) (*ServiceUnit, error) {
+func ServiceUnitFromFile(filename string) (name string, unit *ServiceUnit, err error) {
 	buf, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	c := &ServiceUnit{}
 	err = toml.Unmarshal(buf, c)
-	return c, err
+	return filepath.Base(filename), c, err
 }

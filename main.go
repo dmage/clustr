@@ -17,29 +17,29 @@ func main() {
 	}
 	c = c
 
-	serviceUnit, err := unit.ServiceUnitFromFile("./sleep.service")
+	serviceName, serviceUnit, err := unit.ServiceUnitFromFile("./sleep.service")
 	if err != nil {
 		panic(err)
 	}
 
-	service := service.NewService("sleep.service", &serviceUnit.Service)
-	service.WaitDelay = 100 * time.Millisecond
-	err = service.Start()
+	s := service.NewService(&serviceUnit.Service)
+	err = s.Start()
 	if err != nil {
-		log.Fatal("failed to start service: ", err)
+		log.Fatal(serviceName, ": failed to start service: ", err)
 	}
 
-	log.Println("started, sleeping for 2 seconds")
+	log.Printf("started with pid %d: %s", s.PID(), s.Exe())
+	log.Println("sleeping for 2 seconds")
 	time.Sleep(2 * time.Second)
 	log.Println("stopping")
 
-	err = service.Stop()
+	err = s.Stop()
 	if err != nil {
-		log.Fatal("failed to stop service: ", err)
+		log.Fatal(serviceName, ": failed to stop service: ", err)
 	}
 
-	err = service.Wait()
+	err = s.Wait()
 	if err != nil {
-		log.Fatal("failed to wait service: ", err)
+		log.Fatal(serviceName, ": failed to wait service: ", err)
 	}
 }

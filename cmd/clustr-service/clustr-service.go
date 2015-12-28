@@ -5,6 +5,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
+	"github.com/dmage/clustr/logging"
 	"github.com/dmage/clustr/service"
 	"github.com/dmage/clustr/unit"
 )
@@ -18,23 +19,26 @@ var (
 func main() {
 	command := kingpin.Parse()
 
-	serviceUnit, err := unit.ServiceUnitFromFile(*serviceUnitFile)
+	serviceName, serviceUnit, err := unit.ServiceUnitFromFile(*serviceUnitFile)
 	if err != nil {
 		log.Fatal("failed to load service: ", err)
 	}
 
-	service := service.NewService("sleep.service", &serviceUnit.Service)
+	s := service.NewService(&serviceUnit.Service)
+	s.Stdout = &logging.Writer{Prefix: serviceName + ": stdout: "}
+	s.Stderr = &logging.Writer{Prefix: serviceName + ": stderr: "}
 
 	switch command {
 	case start.FullCommand():
-		err = service.Start()
+		err = s.Start()
 		if err != nil {
-			log.Fatal("failed to start service: ", err)
+			log.Fatal(serviceName, ": failed to start service: ", err)
 		}
+		log.Printf("%s: started with pid %d: %s", serviceName, s.PID(), s.Exe())
 	case stop.FullCommand():
-		err = service.Stop()
+		err = s.Stop()
 		if err != nil {
-			log.Fatal("failed to stop service: ", err)
+			log.Fatal(serviceName, ": failed to stop service: ", err)
 		}
 	default:
 		panic("unexpected command: " + command)
