@@ -13,7 +13,7 @@ type state struct {
 }
 
 func SaveState(name string, s *Service) error {
-	f, err := os.Create(fmt.Sprintf("./state.%s.json", name))
+	f, err := os.Create(fmt.Sprintf("./.__state__%s.json", name))
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func SaveState(name string, s *Service) error {
 }
 
 func LoadState(name string, s *Service) error {
-	f, err := os.Open(fmt.Sprintf("./state.%s.json", name))
+	f, err := os.Open(fmt.Sprintf("./.__state__%s.json", name))
 	if perr, ok := err.(*os.PathError); ok && perr.Err == syscall.ENOENT {
 		return nil
 	}
