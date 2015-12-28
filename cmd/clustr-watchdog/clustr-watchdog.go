@@ -16,10 +16,15 @@ func main() {
 	kingpin.Parse()
 
 	p := watcher.PrisonerFromFile(*serviceUnitFile)
-	for {
+	if p.IsRunning() {
+		log.Print(p.Name, ": found process with pid ", p.Service.PID())
+	} else {
 		p.Start()
+	}
+	for {
 		p.Wait()
 		log.Print(p.Name, ": not running, restarting...")
+		p.Start()
 	}
 
 	panic("unreachable")
