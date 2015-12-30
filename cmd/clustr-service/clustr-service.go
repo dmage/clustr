@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/dmage/clustr/watcher"
+	"github.com/dmage/clustr/highservice"
 )
 
 var (
@@ -19,17 +19,17 @@ var (
 func main() {
 	command := kingpin.Parse()
 
-	p := watcher.PrisonerFromFile(*serviceUnitFile)
+	s := highservice.HighServiceFromFile(*serviceUnitFile)
 	switch command {
 	case start.FullCommand():
-		p.Start()
+		s.Start()
 	case stop.FullCommand():
-		p.Stop()
+		s.Stop()
 	case status.FullCommand():
-		if p.IsRunning() {
-			log.Print(p.Name, " is running")
+		if s.IsRunning() {
+			log.Print(s.Name, " is running")
 		} else {
-			log.Print(p.Name, " stopped")
+			log.Print(s.Name, " stopped")
 			os.Exit(1)
 		}
 	default:

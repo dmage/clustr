@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/dmage/clustr/watcher"
+	"github.com/dmage/clustr/highservice"
 )
 
 var (
@@ -15,16 +15,16 @@ var (
 func main() {
 	kingpin.Parse()
 
-	p := watcher.PrisonerFromFile(*serviceUnitFile)
-	if p.IsRunning() {
-		log.Print(p.Name, ": found process with pid ", p.Service.PID())
+	s := highservice.HighServiceFromFile(*serviceUnitFile)
+	if s.IsRunning() {
+		log.Print(s.Name, ": found process with pid ", s.Service.PID())
 	} else {
-		p.Start()
+		s.Start()
 	}
 	for {
-		p.Wait()
-		log.Print(p.Name, ": not running, restarting...")
-		p.Start()
+		s.Wait()
+		log.Print(s.Name, ": not running, restarting...")
+		s.Start()
 	}
 
 	panic("unreachable")
