@@ -1,4 +1,4 @@
-package service
+package daemon
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type state struct {
 	Exe string
 }
 
-func SaveState(name string, s *Service) error {
+func SaveState(name string, d *Daemon) error {
 	f, err := os.Create(fmt.Sprintf("./.__state__%s.json", name))
 	if err != nil {
 		return err
@@ -20,13 +20,13 @@ func SaveState(name string, s *Service) error {
 	defer f.Close()
 
 	v := state{
-		PID: s.PID(),
-		Exe: s.Exe(),
+		PID: d.PID(),
+		Exe: d.Exe(),
 	}
 	return json.NewEncoder(f).Encode(&v)
 }
 
-func LoadState(name string, s *Service) error {
+func LoadState(name string, d *Daemon) error {
 	f, err := os.Open(fmt.Sprintf("./.__state__%s.json", name))
 	if perr, ok := err.(*os.PathError); ok && perr.Err == syscall.ENOENT {
 		return nil
@@ -39,6 +39,6 @@ func LoadState(name string, s *Service) error {
 		return err
 	}
 
-	s.InitPIDExe(v.PID, v.Exe)
+	d.InitPIDExe(v.PID, v.Exe)
 	return nil
 }

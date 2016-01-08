@@ -6,11 +6,11 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/dmage/clustr/service"
+	"github.com/dmage/clustr/daemon"
 )
 
 type ServiceUnit struct {
-	Service service.Config
+	Service daemon.Config
 }
 
 func ServiceUnitFromFile(filename string) (name string, unit *ServiceUnit, err error) {

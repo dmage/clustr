@@ -1,4 +1,4 @@
-package service
+package daemon
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ type Config struct {
 	Stop  string
 }
 
-type Service struct {
+type Daemon struct {
 	WaitDelay time.Duration
 
 	Stdout WriteFlusher
@@ -36,36 +36,36 @@ type Service struct {
 	exe    string
 }
 
-func NewService(config *Config) *Service {
-	return &Service{
+func NewDaemon(config *Config) *Daemon {
+	return &Daemon{
 		WaitDelay: 100 * time.Millisecond,
 		config:    config,
 	}
 }
 
-func (s *Service) initPID(pid int) error {
-	s.pid = pid
+func (d *Daemon) initPID(pid int) error {
+	d.pid = pid
 
 	exe, err := getProcExe(pid)
 	if err != nil {
 		return err
 	}
-	s.exe = exe
+	d.exe = exe
 
 	return nil
 }
 
-func (s *Service) InitPIDExe(pid int, exe string) {
-	s.pid = pid
-	s.exe = exe
+func (d *Daemon) InitPIDExe(pid int, exe string) {
+	d.pid = pid
+	d.exe = exe
 }
 
-func (s *Service) IsRunning() (bool, error) {
-	if s.pid == 0 || s.exe == "" {
+func (d *Daemon) IsRunning() (bool, error) {
+	if d.pid == 0 || d.exe == "" {
 		return false, nil
 	}
 
-	err := syscall.Kill(s.pid, 0)
+	err := syscall.Kill(d.pid, 0)
 	if err == syscall.ESRCH {
 		return false, nil
 	}
@@ -73,27 +73,27 @@ func (s *Service) IsRunning() (bool, error) {
 		return false, err
 	}
 
-	exe, err := getProcExe(s.pid)
-	if err == nil && s.exe != exe {
+	exe, err := getProcExe(d.pid)
+	if err == nil && d.exe != exe {
 		return false, nil
 	}
 
 	return true, nil
 }
 
-func (s *Service) Start() error {
+func (d *Daemon) Start() error {
 	var stdout bytes.Buffer
 
-	cmd := exec.Command("/bin/sh", "-c", s.config.Start)
+	cmd := exec.Command("/bin/sh", "-c", d.config.Start)
 	cmd.Stdout = &stdout
-	cmd.Stderr = s.Stderr
+	cmd.Stderr = d.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
 
-	if s.Stderr != nil {
-		err = s.Stderr.Flush()
+	if d.Stderr != nil {
+		err = d.Stderr.Flush()
 		if err != nil {
 			return err
 		}
@@ -105,27 +105,27 @@ func (s *Service) Start() error {
 		return fmt.Errorf("invalid pid from start command: %s", strconv.Quote(output))
 	}
 
-	return s.initPID(pid)
+	return d.initPID(pid)
 }
 
-func (s *Service) Stop() error {
-	cmd := exec.Command("/bin/sh", "-c", s.config.Stop)
-	cmd.Stdout = s.Stdout
-	cmd.Stderr = s.Stderr
+func (d *Daemon) Stop() error {
+	cmd := exec.Command("/bin/sh", "-c", d.config.Stop)
+	cmd.Stdout = d.Stdout
+	cmd.Stderr = d.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
 
-	if s.Stdout != nil {
-		err = s.Stdout.Flush()
+	if d.Stdout != nil {
+		err = d.Stdout.Flush()
 		if err != nil {
 			return err
 		}
 	}
 
-	if s.Stderr != nil {
-		err = s.Stderr.Flush()
+	if d.Stderr != nil {
+		err = d.Stderr.Flush()
 		if err != nil {
 			return err
 		}
@@ -134,23 +134,23 @@ func (s *Service) Stop() error {
 	return nil
 }
 
-func (s *Service) Wait() error {
+func (d *Daemon) Wait() error {
 	for {
-		alive, err := s.IsRunning()
+		alive, err := d.IsRunning()
 		if err != nil {
 			return err
 		}
 		if !alive {
 			return nil
 		}
-		time.Sleep(s.WaitDelay)
+		time.Sleep(d.WaitDelay)
 	}
 }
 
-func (s *Service) PID() int {
-	return s.pid
+func (d *Daemon) PID() int {
+	return d.pid
 }
 
-func (s *Service) Exe() string {
-	return s.exe
+func (d *Daemon) Exe() string {
+	return d.exe
 }

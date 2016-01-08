@@ -4,14 +4,14 @@ import (
 	"log"
 
 	"github.com/dmage/clustr/logging"
-	"github.com/dmage/clustr/service"
+	"github.com/dmage/clustr/daemon"
 	"github.com/dmage/clustr/unit"
 )
 
 type HighService struct {
 	Name    string
 	Unit    *unit.ServiceUnit
-	Service *service.Service
+	Service *daemon.Daemon
 }
 
 func HighServiceFromFile(filename string) *HighService {
@@ -20,11 +20,11 @@ func HighServiceFromFile(filename string) *HighService {
 		log.Fatal("failed to load service: ", err)
 	}
 
-	s := service.NewService(&serviceUnit.Service)
+	s := daemon.NewDaemon(&serviceUnit.Service)
 	s.Stdout = &logging.Writer{Prefix: serviceName + ": stdout: "}
 	s.Stderr = &logging.Writer{Prefix: serviceName + ": stderr: "}
 
-	err = service.LoadState(serviceName, s)
+	err = daemon.LoadState(serviceName, s)
 	if err != nil {
 		log.Fatal(serviceName, ": failed to load state: ", err)
 	}
@@ -54,7 +54,7 @@ func (hs *HighService) Start() {
 		log.Fatal(hs.Name, ": failed to start service: ", err)
 	}
 
-	err = service.SaveState(hs.Name, hs.Service)
+	err = daemon.SaveState(hs.Name, hs.Service)
 	if err != nil {
 		log.Fatal(hs.Name, ": failed to save state: ", err)
 	}
