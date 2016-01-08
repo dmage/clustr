@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/dmage/clustr/highservice"
+	"github.com/dmage/clustr/service"
 )
 
 var (
@@ -15,9 +15,9 @@ var (
 func main() {
 	kingpin.Parse()
 
-	s := highservice.HighServiceFromFile(*serviceUnitFile)
+	s := service.ServiceFromFile(*serviceUnitFile)
 	if s.IsRunning() {
-		log.Print(s.Name, ": found process with pid ", s.Service.PID())
+		log.Print(s.Name, ": found process with pid ", s.Daemon.PID())
 	} else {
 		s.Start()
 	}

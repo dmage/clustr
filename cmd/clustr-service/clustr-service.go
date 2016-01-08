@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/dmage/clustr/highservice"
+	"github.com/dmage/clustr/service"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 func main() {
 	command := kingpin.Parse()
 
-	s := highservice.HighServiceFromFile(*serviceUnitFile)
+	s := service.ServiceFromFile(*serviceUnitFile)
 	switch command {
 	case start.FullCommand():
 		s.Start()
