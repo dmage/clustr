@@ -10,7 +10,7 @@ import (
 )
 
 type ServiceUnit struct {
-	Service daemon.Config
+	DaemonConfig daemon.Config `toml:"Service"`
 }
 
 func ServiceUnitFromFile(filename string) (name string, unit *ServiceUnit, err error) {
